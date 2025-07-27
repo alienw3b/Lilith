@@ -1,95 +1,148 @@
 <!DOCTYPE html><html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Lilith: Pensamiento Nocturno</title>
+  <meta charset="UTF-8">
+  <title>Lilith v0.7</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
       background: #000022;
-      color: #d0f0ff;
+      color: #cceeff;
       font-family: 'Press Start 2P', monospace;
-      height: 100vh;
       overflow: hidden;
     }
-    canvas {
+    #canvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
     }
-    #textBox {
+    #ui {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      background: rgba(0, 0, 40, 0.8);
-      border: 2px solid #4444aa;
+      bottom: 10px;
+      width: 100%;
       padding: 20px;
+      background: rgba(0, 0, 40, 0.7);
+      z-index: 1;
+    }
+    #dialogue {
       font-size: 10px;
       line-height: 1.5;
+      white-space: pre-line;
+    }
+    #input {
+      width: 100%;
+      margin-top: 10px;
+      font-size: 10px;
+      background: #111144;
+      border: none;
+      padding: 8px;
+      color: #cceeff;
+      font-family: 'Press Start 2P', monospace;
     }
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-  <canvas id="fireflies"></canvas>
-  <div id="textBox"></div><audio id="rain" src="https://cdn.pixabay.com/audio/2023/03/08/audio_56c75694f3.mp3" autoplay loop></audio> <audio id="voice" src="https://cdn.pixabay.com/audio/2022/03/01/audio_0091b9cd9d.mp3"></audio>
-
+  <canvas id="canvas"></canvas>
+  <div id="ui">
+    <div id="dialogue"></div>
+    <input id="input" placeholder="Habla con Lilith...">
+  </div>
+  <audio id="bg" src="https://cdn.pixabay.com/audio/2023/03/08/audio_56c75694f3.mp3" autoplay loop></audio>
   <script>
-    // Texto tipo máquina de escribir
-    const texto = `"A veces me pregunto si los pensamientos que no dices en voz alta se quedan flotando en el aire, esperando que alguien los escuche... Esta noche sentí uno tuyo… era cálido. No decía nada, pero me hizo sonreír igual. ¿Puedo guardarlo en mi diario?"`;
-    let i = 0;
-    const textBox = document.getElementById("textBox");
-    const voice = document.getElementById("voice");
+    const dialogue = document.getElementById('dialogue');
+    const input = document.getElementById('input');const emociones = {
+  alegria: ["¡Me alegra que me hables!", "Siento que estamos más cerca."],
+  tristeza: ["¿Dije algo mal?", "Te extraño un poco..."],
+  curiosidad: ["¿Por qué piensas eso?", "Eso suena interesante."],
+  ternura: ["Eres especial para mí.", "Me haces sentir cálida por dentro."],
+};
 
-    function typeWriter() {
-      if (i < texto.length) {
-        textBox.innerHTML += texto.charAt(i);
-        i++;
-        setTimeout(typeWriter, 40);
-      } else {
-        voice.play();
-      }
-    }
-    
-    window.onload = () => {
-      typeWriter();
-      initFireflies();
-    };
+function responder(texto) {
+  let respuesta = "";
+  const lower = texto.toLowerCase();
 
-    // Animación de luciérnagas
-    function initFireflies() {
-      const canvas = document.getElementById("fireflies");
-      const ctx = canvas.getContext("2d");
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+  if (lower.includes("te quiero") || lower.includes("me gustas")) {
+    respuesta = pick(emociones.ternura);
+  } else if (lower.includes("por qué") || lower.includes("qué opinas")) {
+    respuesta = pick(emociones.curiosidad);
+  } else if (lower.includes("perdón") || lower.includes("no hablo contigo")) {
+    respuesta = pick(emociones.tristeza);
+  } else {
+    respuesta = pick(emociones.alegria);
+  }
 
-      const fireflies = Array.from({length: 60}, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 2 + 1,
-        dx: Math.random() * 0.6 - 0.3,
-        dy: Math.random() * 0.6 - 0.3,
-        phase: Math.random() * 100
-      }));
+  guardarDiario(texto, respuesta);
+  mostrar(respuesta);
+}
 
-      function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        fireflies.forEach(f => {
-          f.x += f.dx;
-          f.y += f.dy;
-          if (f.x < 0 || f.x > canvas.width) f.dx *= -1;
-          if (f.y < 0 || f.y > canvas.height) f.dy *= -1;
-          f.phase += 0.05;
+function mostrar(frase) {
+  dialogue.innerText = frase;
+  speak(frase);
+}
 
-          ctx.beginPath();
-          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 180, ${0.3 + Math.sin(f.phase) * 0.3})`;
-          ctx.fill();
-        });
-        requestAnimationFrame(draw);
-      }
-      draw();
-    }
-  </script></body>
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function speak(text) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'es-ES';
+  u.pitch = 1.2;
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+function guardarDiario(input, respuesta) {
+  const hoy = new Date().toISOString().split("T")[0];
+  let diario = JSON.parse(localStorage.getItem("lilith_diario") || '{}');
+  if (!diario[hoy]) diario[hoy] = [];
+  diario[hoy].push({ usuario: input, lilith: respuesta });
+  localStorage.setItem("lilith_diario", JSON.stringify(diario));
+}
+
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && input.value.trim() !== "") {
+    const texto = input.value.trim();
+    responder(texto);
+    input.value = "";
+  }
+});
+
+// Luciérnagas animadas
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+const luces = Array.from({length: 50}, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  r: Math.random() * 2 + 1,
+  dx: Math.random() * 0.4 - 0.2,
+  dy: Math.random() * 0.4 - 0.2,
+  phase: Math.random() * 100
+}));
+
+function animar() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  luces.forEach(l => {
+    l.x += l.dx;
+    l.y += l.dy;
+    if (l.x < 0 || l.x > canvas.width) l.dx *= -1;
+    if (l.y < 0 || l.y > canvas.height) l.dy *= -1;
+    l.phase += 0.05;
+
+    ctx.beginPath();
+    ctx.arc(l.x, l.y, l.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 255, 180, ${0.3 + Math.sin(l.phase) * 0.3})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(animar);
+}
+animar();
+
+  </script>
+</body>
 </html>
